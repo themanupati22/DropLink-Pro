@@ -65,8 +65,18 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Upload endpoint
-app.use("/files", express.static(uploadDir));  // direct file access
+// Direct file access – serve with attachment to force download
+app.get("/files/:name", (req, res) => {
+  const fileName = req.params.name;
+  const filePath = path.join(uploadDir, fileName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "File not found" });
+  }
+  // Set headers to suggest download
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName.replace(/^\d+-/, "")}"`);
+  res.download(filePath, fileName.replace(/^\d+-/, ""));
+});
 
 app.post("/upload", upload.single("file"), (req, res) => {
   try {
