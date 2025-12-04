@@ -65,8 +65,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Direct file access – serve with attachment to force download
-app.get("/files/:name", (req, res) => {
+// Static file access for inline preview
+app.use("/files", express.static(uploadDir));
+
+// Explicit download route to force attachment
+app.get("/files/:name/download", (req, res) => {
   const fileName = req.params.name;
   const filePath = path.join(uploadDir, fileName);
   if (!fs.existsSync(filePath)) {
@@ -280,7 +283,7 @@ app.get("/file/:id", (req, res) => {
         </div>
 
         <div class="bottom-actions">
-          <a class="btn" href="${file.fileUrl}" download="${file.originalName}">⬇ Download File</a>
+          <a class="btn" href="/files/${file.storedName}/download">⬇ Download File</a>
         </div>
 
         <div class="note">
