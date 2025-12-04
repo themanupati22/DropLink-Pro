@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload → Shareable URL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Reset default margins to remove white space around the page */
+    html, body { margin:0; padding:0; }
+    /* Keep everything the same; just make the page background white and prevent page scroll */
+    body { background:#fff !important; height:100vh; overflow:hidden; display:block !important; align-items:unset !important; justify-content:unset !important; }
+    /* Ensure no top padding/margin from external CSS affects layout */
+    body { padding-top:0 !important; }
+    body > div { margin-top:0 !important; padding-top:0 !important; }
+    h1 { margin-top:36px !important; }
+
+    /* Light theme overrides (non-destructive) */
+    .card {
+      background:#fff !important;
+      color:#1f2937 !important;
+      border:1px solid #e5e7eb !important;
+      box-shadow:0 12px 40px rgba(17,24,39,0.12) !important;
+    }
+    .title { color:#111827 !important; }
+    .subtitle { color:#4b5563 !important; }
+
+    .drop-zone {
+      background:#f9fafb !important;
+      border:1.5px dashed #d1d5db !important;
+      color:#111827 !important;
+      position: relative; /* needed for ::before border ring */
+      min-height: 260px; /* taller choose box on desktop */
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+    }
+    .drop-zone.dragover { background:#e0f2fe !important; border-color:#38bdf8 !important; }
+    .drop-zone span { color:#0284c7 !important; }
+    /* Make prompt text larger on web */
+    .drop-zone p { font-size: 1.05rem; line-height: 1.6; margin: 6px 0 0; }
+    @media (min-width: 768px) {
+      .drop-zone p { font-size: 1.2rem; }
+    }
+
+    /* Big upload symbol (SVG) centered inside drop zone */
+    .upload-icon { margin-bottom: 12px; color:#9ca3af; }
+    .upload-icon svg { width: 92px; height: 92px; display:block; }
+
+    /* Animatable angle for radial color series */
+    @property --angle {
+      syntax: "<angle>";
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    /* Radial color border using conic-gradient and --angle */
+    .drop-zone::before {
+      content: "";
+      position: absolute;
+      inset: -3px;          /* thickness of glowing ring */
+      border-radius: inherit;
+
+      /* Radial / circular color series */
+      background: conic-gradient(
+        from var(--angle),
+        #22c55e,
+        #0ea5e9,
+        #6366f1,
+        #a855f7,
+        #ec4899,
+        #fbbf24,
+        #22c55e
+      );
+
+      /* Keep only the border line */
+      padding: 3px;
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+
+      /* Soft glow */
+      filter: blur(6px);
+      opacity: 0.9;
+
+      /* Only COLORS rotate via --angle, element does NOT rotate */
+      animation: colorWheel 4s linear infinite;
+      z-index: 0; /* sits under dashed border content */
+      pointer-events: none;
+    }
+
+    /* Animate the angle variable – gives series rotation of colors */
+    @keyframes colorWheel {
+      from { --angle: 0deg; }
+      to   { --angle: 360deg; }
+    }
+
+    .result-box { background:#f9fafb !important; border:1px solid #e5e7eb !important; }
+    .result-label { color:#111827 !important; }
+    .result-value { color:#374151 !important; }
+
+    .share-input {
+      background:#fff !important;
+      color:#111827 !important;
+      border:1px solid #e5e7eb !important;
+    }
+    .copy-btn {
+      background:#38bdf8 !important; border:1px solid #38bdf8 !important; color:#fff !important;
+    }
+    .copy-btn:hover { background:#0ea5e9 !important; }
+    .hint { color:#6b7280 !important; }
+
+    /* Mobile polish */
+    @media (max-width: 480px) {
+      body { padding: 0 10px; }
+      /* Compress vertical space to avoid any scrolling on phones */
+      body > div { margin-top: 0 !important; }
+      h1 { font-size: 1.7rem !important; margin-bottom: 6px !important; }
+      /* Quotation paragraph under heading */
+      body > div > div:nth-child(2) { font-size: 0.95rem !important; margin-bottom: 12px !important; color:#000 !important; }
+      .subtitle { font-size: 0.8rem !important; }
+      .card { border-radius: 12px !important; padding: 10px !important; }
+      /* Mobile drop-zone: make it taller but still fit */
+      .drop-zone { padding: 16px !important; min-height: 180px !important; }
+      .btn { padding: 10px 12px !important; font-size: 0.88rem !important; }
+      .hint { display: none !important; }
+      /* Ensure whole content fits within viewport height */
+      body > div { max-height: calc(100vh - 8px); }
+      .result-box .result-row { gap: 6px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:0;">
+    <h1 style="font-size:2.8rem;font-weight:800;margin-top:0;margin-bottom:14px;color:#111;letter-spacing:-1px;font-family:inherit;">DropLink Pro</h1>
+    <div style="font-size:1.15rem;color:#000;margin-bottom:24px;text-align:center;max-width:520px;line-height:1.5;">“Easy to share any file, any format, any size — with a single shareable URL.”</div>
+    <div class="card">
+    <div class="title">Upload → Shareable URL 🔗</div>
+    <div class="subtitle">
+      Upload any file. Get a link you can share.  
+      When others open it, they’ll see file type, size, and a download button.
+    </div>
+
+    <div id="dropZone" class="drop-zone">
+      <div class="upload-icon" aria-hidden="true">
+        <!-- Exact-style upload symbol: rounded arrow into rounded tray -->
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <!-- Arrow stem (even longer, rounded) -->
+          <path d="M12 5v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Arrow head (rounded) -->
+          <path d="M7.2 9.4 12 5 16.8 9.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Tray: curved bottom with rounded sides (matches reference style) -->
+          <!-- Bottom curve -->
+          <path d="M6 17.5a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Short vertical side strokes -->
+          <path d="M6 17.5v-2.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M18 17.5v-2.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p><span>Click to choose</span> or drag & drop a file here</p>
+    </div>
+    <input id="fileInput" class="file-input" type="file" />
+
+    <button id="uploadBtn" class="btn">
+      <span>Upload & Generate Link</span>
+    </button>
+
+    <div id="status" class="status"></div>
+
+    <div id="result" class="result-box" style="display:none;">
+      <div class="result-row">
+        <span class="result-label">Share URL</span>
+        <div class="share-input-wrap">
+          <input id="shareUrlInput" class="share-input" readonly />
+          <button id="copyBtn" class="copy-btn">Copy</button>
+        </div>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Direct File URL (optional)</span>
+        <span class="result-value" id="fileUrlText"></span>
+      </div>
+    </div>
+
+    <div class="hint">
+      💡 Tip: Share the <b>Share URL</b> (not the direct file URL) so others can see the file info page.
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
