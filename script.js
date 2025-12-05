@@ -51,6 +51,13 @@ uploadBtn.addEventListener("click", async () => {
     return;
   }
 
+  // Client-side guard: enforce 1GB max to show instant feedback
+  const MAX_BYTES = 1024 * 1024 * 1024; // 1GB
+  if (selectedFile.size > MAX_BYTES) {
+    statusEl.textContent = "File too large. Maximum allowed is 1GB.";
+    return;
+  }
+
   uploadBtn.disabled = true;
   statusEl.textContent = "Uploading...";
   resultBox.style.display = "none";
@@ -65,8 +72,17 @@ uploadBtn.addEventListener("click", async () => {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Upload failed");
+      // Try to extract a message; handle typical size limit status (413)
+      let errPayload = {};
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        errPayload = await res.json().catch(() => ({}));
+      } else {
+        const text = await res.text().catch(() => "");
+        errPayload = { error: text };
+      }
+      const msg = errPayload.error || (res.status === 413 ? "File too large. Maximum allowed is 1GB." : `Upload failed (${res.status}).`);
+      throw new Error(msg);
     }
 
     const data = await res.json();

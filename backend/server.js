@@ -63,7 +63,13 @@ const storage = multer.diskStorage({
     cb(null, uniqueName);
   },
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    // Set max file size to 1GB
+    fileSize: 1024 * 1024 * 1024,
+  },
+});
 
 // Static file access for inline preview
 app.use("/files", express.static(uploadDir));
