@@ -61,31 +61,55 @@ uploadBtn.addEventListener("click", async () => {
   uploadBtn.disabled = true;
   statusEl.textContent = "Uploading...";
   resultBox.style.display = "none";
+  const overlay = document.getElementById("uploadOverlay");
+  const progressText = document.getElementById("uploadProgressText");
+  const progressBar = document.getElementById("uploadProgressBar");
+  if (overlay) overlay.style.display = "flex";
+  if (progressText) progressText.textContent = "Uploading… 0%";
+  if (progressBar) progressBar.style.width = "0%";
 
   try {
     const formData = new FormData();
     formData.append("file", selectedFile);
 
-    const res = await fetch(`${BACKEND_URL}/upload`, {
-      method: "POST",
-      body: formData,
+    // Use XHR for upload progress
+    const xhr = new XMLHttpRequest();
+    const url = `${BACKEND_URL}/upload`;
+    const data = await new Promise((resolve, reject) => {
+      xhr.upload.onprogress = (e) => {
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * 100);
+        if (progressText) progressText.textContent = `Uploading… ${pct}%`;
+        if (progressBar) progressBar.style.width = `${pct}%`;
+      };
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          const ct = xhr.getResponseHeader("content-type") || "";
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const payload = ct.includes("application/json") ? JSON.parse(xhr.responseText) : {};
+              resolve(payload);
+            } catch {
+              resolve({});
+            }
+          } else {
+            let message = "Upload failed";
+            if (ct.includes("application/json")) {
+              try {
+                const err = JSON.parse(xhr.responseText);
+                message = err.error || err.message || message;
+              } catch {}
+            } else if (xhr.status === 413) {
+              message = "File too large. Maximum allowed is 1GB.";
+            }
+            reject(new Error(message));
+          }
+        }
+      };
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.open("POST", url);
+      xhr.send(formData);
     });
-
-    if (!res.ok) {
-      // Try to extract a message; handle typical size limit status (413)
-      let errPayload = {};
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        errPayload = await res.json().catch(() => ({}));
-      } else {
-        const text = await res.text().catch(() => "");
-        errPayload = { error: text };
-      }
-      const msg = errPayload.error || (res.status === 413 ? "File too large. Maximum allowed is 1GB." : `Upload failed (${res.status}).`);
-      throw new Error(msg);
-    }
-
-    const data = await res.json();
     statusEl.textContent = data.message || "Upload successful.";
 
     // Share URL (prefer backend-provided; fallback build from id)
@@ -108,6 +132,7 @@ uploadBtn.addEventListener("click", async () => {
     statusEl.textContent = "Error: " + err.message;
   } finally {
     uploadBtn.disabled = false;
+    if (overlay) overlay.style.display = "none";
   }
 });
 

@@ -133,7 +133,7 @@
 <body>
   <div style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:0;">
     <h1 style="font-size:2.8rem;font-weight:800;margin-top:0;margin-bottom:14px;color:#111;letter-spacing:-1px;font-family:inherit;">DropLink Pro</h1>
-    <div style="font-size:1.15rem;color:#000;margin-bottom:24px;text-align:center;max-width:520px;line-height:1.5;">“Easy to share any file, any format, any size — with a single shareable URL.”</div>
+    <div style="font-size:1.15rem;color:#000;margin-bottom:24px;text-align:center;max-width:520px;line-height:1.5;">“Easy to share any file, any format, up to 1GB — with a single shareable URL.”</div>
     <div class="card">
     <div class="title">Upload → Shareable URL 🔗</div>
     <div class="subtitle">
@@ -175,6 +175,10 @@
           <button id="copyBtn" class="copy-btn">Copy</button>
         </div>
       </div>
+      <!-- Expiry note under Share URL -->
+      <div class="result-row" style="margin-top:4px;">
+        <span class="result-label" style="color:#6b7280 !important; font-weight:500;">⏱ Link expires in 10 minutes</span>
+      </div>
       <div class="result-row">
         <span class="result-label">Direct File URL (optional)</span>
         <span class="result-value" id="fileUrlText"></span>
@@ -187,5 +191,20 @@
   </div>
 
   <script src="script.js"></script>
+  
+  <!-- Upload overlay: blurred background + spinner + progress -->
+  <div id="uploadOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;">
+    <div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);backdrop-filter: blur(6px);"></div>
+    <div style="position:relative;z-index:1;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 40px rgba(17,24,39,0.12);padding:18px 20px;min-width:280px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div aria-hidden="true" style="width:32px;height:32px;border:3px solid #93c5fd;border-top-color:#0ea5e9;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      <div id="uploadProgressText" style="color:#111827;font-weight:600;">Uploading…</div>
+      <div style="width:100%;height:10px;background:#f3f4f6;border-radius:999px;overflow:hidden;">
+        <div id="uploadProgressBar" style="height:100%;width:0%;background:#38bdf8;transition:width 0.12s ease;"></div>
+      </div>
+    </div>
+  </div>
+  <style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
 </body>
 </html>

@@ -264,6 +264,9 @@ app.get("/file/:id", (req, res) => {
         </div>
 
         <h1>📁 ${file.originalName}</h1>
+        <div style="margin:6px 0 10px;">
+          <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#f3f4f6;color:#6b7280;font-size:0.85rem;font-weight:600;">⏱ Link expires in 10 minutes</span>
+        </div>
         <div class="meta">
           <div class="meta-row">
             <span class="label">Type:</span>
